@@ -23,7 +23,6 @@ fn test_try_from_valid_input() {
     ]);
 
     for (str, mono) in tests {
-        println!("{} -> {:?}", str, &mono);
         assert_eq!(Monomial::try_from(str).unwrap(), mono);
     }
 }

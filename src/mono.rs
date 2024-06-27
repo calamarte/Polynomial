@@ -100,7 +100,15 @@ where
     T: Num + NumCast + Signed + Copy + Default + Display + FromStr + PartialOrd
 {
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
-        iter.fold(Monomial::<T>::default(), |a, b| a.add(b).unwrap())
+
+        let mut exp = 0;
+        let mut sum = T::zero();
+        for mono in iter {
+            exp = mono.get_exp();
+            sum = sum + mono.get_value();
+        }
+
+        Monomial::new(sum, exp)
     }
 }
 

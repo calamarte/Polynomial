@@ -1,4 +1,8 @@
-use std::{collections::HashMap, fmt::{Debug, Display}, ops::Add, str::FromStr};
+use std::{
+    collections::HashMap,
+    fmt::{Debug, Display},
+    str::FromStr,
+};
 
 use num::{Num, NumCast, Signed};
 
@@ -20,9 +24,6 @@ where
     }
 
     fn collapse(&mut self) {
-        // self.mono_vec
-        //     .sort_by(|m1, m2| m2.get_exp().cmp(&m1.get_exp()));
-
         let mut group_by_exp: HashMap<i32, Vec<Monomial<T>>> = HashMap::new();
         for mono in self.mono_vec.iter() {
             group_by_exp
@@ -31,16 +32,16 @@ where
                 .push(*mono);
         }
 
-        // println!("{:#?}", group_by_exp);
-
-        // TODO colapse same exp
-        // 
-        let mono_vec : Vec<Monomial<T>>= group_by_exp.into_iter()
+        let mut mono_vec: Vec<Monomial<T>> = group_by_exp
+            .into_iter()
             .map(|(_, m)| m.into_iter().sum::<Monomial<T>>())
             .collect();
-        
-        // mono_vec.sort();
 
+        mono_vec.retain(|&m| m.get_value() != T::zero());
+
+        mono_vec.sort_by(|m1, m2| m2.get_exp().cmp(&m1.get_exp()));
+
+        self.mono_vec = mono_vec;
     }
 }
 
@@ -52,7 +53,6 @@ where
         Polynomial::new(vec![Monomial::default()])
     }
 }
-
 
 impl<T> From<Vec<Monomial<T>>> for Polynomial<T>
 where
@@ -124,9 +124,7 @@ where
         }
 
         if mono_vec.is_empty() {
-            return Ok(
-                Polynomial::default()
-            )
+            return Ok(Polynomial::default());
         }
 
         Ok(Polynomial::new(mono_vec))
@@ -162,6 +160,11 @@ where
     T: Num + NumCast + Signed + Copy + Default + Display + FromStr + PartialOrd + Debug,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.mono_vec.is_empty() {
+            write!(f, "0")?;
+            return Ok(());
+        }
+
         for (i, mono) in self.mono_vec.iter().enumerate() {
             let sign = match mono.get_value() < T::zero() {
                 true if i == 0 => "-".to_string(),

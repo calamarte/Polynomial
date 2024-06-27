@@ -9,6 +9,7 @@ fn main() {
         Monomial::try_from("1").unwrap(),
     ];
 
+    // let poly: Polynomial<i32> = Polynomial::try_from("-2x^2 + 2x^3 - 10 - 1").unwrap();
     let poly: Polynomial<i32> = Polynomial::try_from("-2x^2 + 2x^3 - 10 - 1").unwrap();
     // let poly_2: Polynomial<i32> = Polynomial::try_from(vec![1,0,0,0, 1, 1]).unwrap();
 

@@ -73,13 +73,6 @@ where
     }
 }
 
-// impl<T> Ord for Monomial<T>
-// where 
-//     T: Num + NumCast + Signed + Copy + Default + Display + FromStr + PartialOrd
-// {
-//
-// }
-
 impl<T> Add for Monomial<T>
 where 
     T: Num + NumCast + Signed + Copy + Default + Display + FromStr + PartialOrd

@@ -1,7 +1,5 @@
 use std::{
-    collections::HashMap,
-    fmt::{Debug, Display},
-    str::FromStr,
+    collections::HashMap, fmt::{Debug, Display}, ops::Add, str::FromStr
 };
 
 use num::{Num, NumCast, Signed};
@@ -102,6 +100,19 @@ where
         }
 
         Ok(Polynomial::new(mono_vec))
+    }
+}
+
+impl<T> Add for Polynomial<T> 
+where
+    T: Num + NumCast + Signed + Copy + Default + Display + FromStr + PartialOrd + Debug,
+{
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        let mut mono_vec: Vec<Monomial<T>> = self.mono_vec.clone();
+        mono_vec.extend_from_slice(&rhs.mono_vec);
+        Polynomial::new(mono_vec)
     }
 }
 

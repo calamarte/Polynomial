@@ -1,9 +1,23 @@
+#![allow(warnings)]
+
 use rust_polynomial::{Monomial, Polynomial};
 
 fn main() {
-    // let poly = Polynomial::new(vec![10f64]);
-    let mono = Monomial::try_from("2x").unwrap();
+    let mono_vec: Vec<Monomial<i8>> = vec![
+        Monomial::try_from("-x^2").unwrap(),
+        Monomial::try_from("-2x").unwrap(),
+        Monomial::try_from("1").unwrap(),
+    ];
 
+    let poly: Polynomial<i32> = Polynomial::try_from("-2x^2 + 2x^3 - 10 - 1").unwrap();
+    // let poly_2: Polynomial<i32> = Polynomial::try_from(vec![1,0,0,0, 1, 1]).unwrap();
 
-    println!("{:?}", mono);
+    // for mono in &poly {
+    //     println!("{mono}");
+    // }
+    //
+    //
+    println!("{}", poly);
+    // println!("{}", poly_2);
 }
+

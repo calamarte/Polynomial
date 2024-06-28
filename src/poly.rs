@@ -1,20 +1,17 @@
 use std::{
-    collections::HashMap, fmt::{Debug, Display}, ops::{Add, Mul}, str::FromStr
+    collections::HashMap,
+    fmt::{Debug, Display},
+    ops::{Add, Div, Mul, Neg},
 };
 
-use num::{Num, NumCast, Signed};
+use crate::{mono::Monomial, MonomialValue};
 
-use crate::mono::Monomial;
-
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Polynomial<T> {
     mono_vec: Vec<Monomial<T>>,
 }
 
-impl<T> Polynomial<T>
-where
-    T: Num + NumCast + Signed + Copy + Default + Display + FromStr + PartialOrd + Debug,
-{
+impl<T: MonomialValue> Polynomial<T> {
     pub fn new(mono_vec: Vec<Monomial<T>>) -> Polynomial<T> {
         let mut poly = Polynomial { mono_vec };
         poly.collapse();
@@ -41,30 +38,50 @@ where
 
         self.mono_vec = mono_vec;
     }
+
+    fn max_exp(&self) -> Monomial<T> {
+        if self.mono_vec.is_empty() {
+            return Monomial::default();
+        }
+
+        self.mono_vec[0]
+    }
+
+    fn push_raw(&mut self, mono: Monomial<T>) {
+        self.mono_vec.push(mono);
+    }
+
+    pub fn push(&mut self, mono: Monomial<T>) {
+        self.push_raw(mono);
+        self.collapse();
+    }
+
+    pub fn div_mono(self, rhs: Monomial<T>) -> Self {
+        let mono_vec = self.into_iter().map(|m| m / rhs).collect();
+
+        Polynomial::new(mono_vec)
+    }
+
+    pub fn mul_mono(self, rhs: Monomial<T>) -> Self {
+        let mono_vec = self.into_iter().map(|m| m * rhs).collect();
+
+        Polynomial::new(mono_vec)
+    }
 }
 
-impl<T> Default for Polynomial<T>
-where
-    T: Num + NumCast + Signed + Copy + Default + Display + FromStr + PartialOrd + Debug,
-{
+impl<T: MonomialValue> Default for Polynomial<T> {
     fn default() -> Self {
         Polynomial::new(vec![Monomial::default()])
     }
 }
 
-impl<T> From<Vec<Monomial<T>>> for Polynomial<T>
-where
-    T: Num + NumCast + Signed + Copy + Default + Display + FromStr + PartialOrd + Debug,
-{
+impl<T: MonomialValue> From<Vec<Monomial<T>>> for Polynomial<T> {
     fn from(value: Vec<Monomial<T>>) -> Self {
         Polynomial::new(value)
     }
 }
 
-impl<T> TryFrom<&str> for Polynomial<T>
-where
-    T: Num + NumCast + Signed + Copy + Default + Display + FromStr + PartialOrd + Debug,
-{
+impl<T: MonomialValue> TryFrom<&str> for Polynomial<T> {
     type Error = &'static str;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
@@ -103,33 +120,32 @@ where
     }
 }
 
-impl<T> Add for Polynomial<T> 
-where
-    T: Num + NumCast + Signed + Copy + Default + Display + FromStr + PartialOrd + Debug,
-{
+impl<T: MonomialValue> Neg for Polynomial<T> {
     type Output = Self;
 
-    fn add(self, rhs: Self) -> Self::Output {
-        let mut mono_vec: Vec<Monomial<T>> = self.mono_vec.clone();
-        mono_vec.extend_from_slice(&rhs.mono_vec);
-        Polynomial::new(
-            [self.mono_vec.clone(), rhs.mono_vec.clone()].concat()
-        )
+    fn neg(self) -> Self::Output {
+        let mono_vec = self.mono_vec.into_iter().map(Monomial::neg).collect();
+
+        Polynomial::new(mono_vec)
     }
 }
 
-impl<T> Mul for Polynomial<T> 
-where
-    T: Num + NumCast + Signed + Copy + Default + Display + FromStr + PartialOrd + Debug,
-{
+impl<T: MonomialValue> Add for Polynomial<T> {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Polynomial::new([self.mono_vec.clone(), rhs.mono_vec.clone()].concat())
+    }
+}
+
+impl<T: MonomialValue> Mul for Polynomial<T> {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self::Output {
-
         let mut result: Vec<Monomial<T>> = Vec::new();
         for self_mono in &self {
             for rhs_mono in &rhs {
-               result.push(*self_mono * *rhs_mono);
+                result.push(*self_mono * *rhs_mono);
             }
         }
 
@@ -137,11 +153,28 @@ where
     }
 }
 
+impl<T: MonomialValue> Div for Polynomial<T> {
+    type Output = (Self, Self);
 
-impl<T> TryFrom<Vec<T>> for Polynomial<T>
-where
-    T: Num + NumCast + Signed + Copy + Default + Display + FromStr + PartialOrd + Debug,
-{
+    fn div(self, rhs: Self) -> Self::Output {
+        let mut dividend = self;
+        let divider = rhs;
+        let mut quotient: Polynomial<T> = Polynomial::default();
+
+        while dividend.max_exp().get_exp() >= divider.max_exp().get_exp() {
+            let result = dividend.max_exp() / divider.max_exp();
+            quotient.push_raw(result);
+
+            dividend = dividend.clone() + (divider.clone().mul_mono(result)).neg();
+        }
+
+        quotient.collapse();
+
+        (quotient, dividend)
+    }
+}
+
+impl<T: MonomialValue> TryFrom<Vec<T>> for Polynomial<T> {
     type Error = &'static str;
 
     fn try_from(value: Vec<T>) -> Result<Self, Self::Error> {
@@ -164,10 +197,7 @@ where
     }
 }
 
-impl<T> IntoIterator for Polynomial<T>
-where
-    T: Num + NumCast + Signed + Copy + Default + Display + FromStr + PartialOrd + Debug,
-{
+impl<T: MonomialValue> IntoIterator for Polynomial<T> {
     type Item = Monomial<T>;
     type IntoIter = std::vec::IntoIter<Self::Item>;
 
@@ -176,10 +206,7 @@ where
     }
 }
 
-impl<'a, T> IntoIterator for &'a Polynomial<T>
-where
-    T: Num + NumCast + Signed + Copy + Default + Display + FromStr + PartialOrd + Debug,
-{
+impl<'a, T: MonomialValue> IntoIterator for &'a Polynomial<T> {
     type Item = &'a Monomial<T>;
     type IntoIter = std::slice::Iter<'a, Monomial<T>>;
 
@@ -188,10 +215,7 @@ where
     }
 }
 
-impl<T> Display for Polynomial<T>
-where
-    T: Num + NumCast + Signed + Copy + Default + Display + FromStr + PartialOrd + Debug,
-{
+impl<T: MonomialValue> Display for Polynomial<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if self.mono_vec.is_empty() {
             write!(f, "0")?;

@@ -99,16 +99,15 @@ fn mul_op() {
                 * Polynomial::<i32>::try_from("-6x^6 - 91x + 12").unwrap()
         )
     );
-    
+
     assert_eq!(
         "x^2",
         format!(
             "{}",
-            Polynomial::<i32>::try_from("x").unwrap()
-                * Polynomial::<i32>::try_from("x").unwrap()
+            Polynomial::<i32>::try_from("x").unwrap() * Polynomial::<i32>::try_from("x").unwrap()
         )
     );
-    
+
     assert_eq!(
         "0",
         format!(
@@ -117,7 +116,7 @@ fn mul_op() {
                 * Polynomial::<i32>::try_from("x^4 - 7x + 9").unwrap()
         )
     );
-    
+
     assert_eq!(
         "x^2 - 1",
         format!(
@@ -153,7 +152,7 @@ fn mul_op() {
                 * Polynomial::<i32>::try_from("x + 1").unwrap()
         )
     );
-    
+
     assert_eq!(
         "x^2 + 2x + 1",
         format!(
@@ -162,4 +161,33 @@ fn mul_op() {
                 * Polynomial::<i32>::try_from("x + 1").unwrap()
         )
     );
+}
+
+#[test]
+fn div_op() {
+    let to_check = HashMap::from([
+        // (("x4 - 6x2 + 8", "x-1"), ("x^3 + x^2 - 5x - 5", "3")), TODO check try_from
+        (("4x^2 + 32x + 64", "2x + 8"), ("2x + 8", "0")),
+        (("-5x^7 + 42x^3 - 9", "x^2 + 1"), ("-5x^5 + 5x^3 + 37x", "-37x - 9")),
+    ])
+        .into_iter()
+        .map(|((str1, str2), (result, rest))| {
+            (
+                (
+                    Polynomial::<i32>::try_from(str1).unwrap(),
+                    Polynomial::<i32>::try_from(str2).unwrap(),
+                ),
+                (
+                    Polynomial::<i32>::try_from(result).unwrap(),
+                    Polynomial::<i32>::try_from(rest).unwrap(),
+                ),
+            )
+        });
+
+    for ((p1, p2), (expect_result, expect_rest)) in to_check {
+        let (result, rest) = p1 / p2;
+
+        assert_eq!(result, expect_result);
+        assert_eq!(rest, expect_rest);
+    }
 }

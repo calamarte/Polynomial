@@ -1,26 +1,44 @@
-use std::{default::Default, fmt::{Display, Error}, i64, iter::Sum, num::IntErrorKind, ops::{Add, Mul}, str::FromStr };
+use std::{
+    default::Default,
+    fmt::{Display, Error},
+    i64,
+    iter::Sum,
+    num::IntErrorKind,
+    ops::{Add, Div, Mul, Neg},
+    str::FromStr,
+};
 
 use num::{Num, NumCast, Signed};
 
+pub trait MonomialValue:
+    Num + NumCast + Signed + Copy + Default + Display + FromStr + PartialOrd
+{
+}
+
+impl<T> MonomialValue for T where
+    T: Num + NumCast + Signed + Copy + Default + Display + FromStr + PartialOrd
+{
+}
 
 #[derive(Default, Debug, PartialEq, PartialOrd, Clone, Copy)]
-pub struct Monomial<T>{
+pub struct Monomial<T> {
     value: T,
     exp: i32,
 }
 
-impl<T> Monomial<T>
-where 
-    T: Num + NumCast + Signed + Copy + Default + Display + FromStr + PartialOrd
-{
-    pub fn new(value: T, exp: i32) -> Monomial<T> {
+impl<T: MonomialValue> Monomial<T> {
+    pub fn new(value: T, mut exp: i32) -> Monomial<T> {
+        if T::is_zero(&value) {
+            exp = 0;
+        }
+
         Monomial { value, exp }
     }
 
     pub fn get_value(&self) -> T {
         self.value
     }
-    
+
     pub fn get_exp(&self) -> i32 {
         self.exp
     }
@@ -30,10 +48,7 @@ where
     }
 }
 
-impl<T> TryFrom<&str> for Monomial<T> 
-where 
-    T: Num + NumCast + Signed + Copy + Default + Display + FromStr + PartialOrd
-{
+impl<T: MonomialValue> TryFrom<&str> for Monomial<T> {
     type Error = &'static str;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
@@ -73,10 +88,15 @@ where
     }
 }
 
-impl<T> Add for Monomial<T>
-where 
-    T: Num + NumCast + Signed + Copy + Default + Display + FromStr + PartialOrd
-{
+impl<T: MonomialValue> Neg for Monomial<T> {
+    type Output = Self;
+
+    fn neg(self) -> Self::Output {
+        Monomial::new(-self.value, self.exp)
+    }
+}
+
+impl<T: MonomialValue> Add for Monomial<T> {
     type Output = Result<Self, &'static str>;
 
     fn add(self, rhs: Self) -> Self::Output {
@@ -88,11 +108,7 @@ where
     }
 }
 
-
-impl<T> Mul for Monomial<T>
-where 
-    T: Num + NumCast + Signed + Copy + Default + Display + FromStr + PartialOrd
-{
+impl<T: MonomialValue> Mul for Monomial<T> {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self::Output {
@@ -100,12 +116,16 @@ where
     }
 }
 
-impl<T> Sum<Self> for Monomial<T>
-where 
-    T: Num + NumCast + Signed + Copy + Default + Display + FromStr + PartialOrd
-{
-    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+impl<T: MonomialValue> Div for Monomial<T> {
+    type Output = Self;
 
+    fn div(self, rhs: Self) -> Self::Output {
+        Monomial::new(self.value / rhs.value, self.exp - rhs.exp)
+    }
+}
+
+impl<T: MonomialValue> Sum<Self> for Monomial<T> {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
         let mut exp = 0;
         let mut sum = T::zero();
         for mono in iter {
@@ -117,10 +137,7 @@ where
     }
 }
 
-impl<T> Display for Monomial<T>
-where 
-    T: Num + NumCast + Signed + Copy + Default + Display + FromStr + PartialOrd
-{
+impl<T: MonomialValue> Display for Monomial<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let val: i64 = T::to_i64(&self.value).ok_or(Error)?;
         let base: String = match val {
@@ -140,4 +157,3 @@ where
         write!(f, "{}{}", base, exp)
     }
 }
-

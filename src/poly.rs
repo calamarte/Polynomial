@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap, fmt::{Debug, Display}, ops::Add, str::FromStr
+    collections::HashMap, fmt::{Debug, Display}, ops::{Add, Mul}, str::FromStr
 };
 
 use num::{Num, NumCast, Signed};
@@ -112,9 +112,31 @@ where
     fn add(self, rhs: Self) -> Self::Output {
         let mut mono_vec: Vec<Monomial<T>> = self.mono_vec.clone();
         mono_vec.extend_from_slice(&rhs.mono_vec);
-        Polynomial::new(mono_vec)
+        Polynomial::new(
+            [self.mono_vec.clone(), rhs.mono_vec.clone()].concat()
+        )
     }
 }
+
+impl<T> Mul for Polynomial<T> 
+where
+    T: Num + NumCast + Signed + Copy + Default + Display + FromStr + PartialOrd + Debug,
+{
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+
+        let mut result: Vec<Monomial<T>> = Vec::new();
+        for self_mono in &self {
+            for rhs_mono in &rhs {
+               result.push(*self_mono * *rhs_mono);
+            }
+        }
+
+        Polynomial::new(result)
+    }
+}
+
 
 impl<T> TryFrom<Vec<T>> for Polynomial<T>
 where

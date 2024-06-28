@@ -52,7 +52,6 @@ fn construct_by_str() {
     });
 }
 
-
 #[test]
 fn add_op() {
     assert_eq!(
@@ -72,7 +71,7 @@ fn add_op() {
                 + Polynomial::<i32>::try_from("-x^2 + 10").unwrap()
         )
     );
-    
+
     assert_eq!(
         "3x^7 - x^2 + 15x",
         format!(
@@ -82,10 +81,85 @@ fn add_op() {
                 + Polynomial::<i32>::try_from("-x^2 + 12x - 5x^7").unwrap()
         )
     );
+
+    assert_eq!(
+        Polynomial::<i32>::try_from("2x + 18").unwrap(),
+        Polynomial::<i32>::try_from("5x^2 + 2x + 10").unwrap()
+            + Polynomial::<i32>::try_from("8 - 7x^2 + 2x^2").unwrap()
+    );
+}
+
+#[test]
+fn mul_op() {
+    assert_eq!(
+        "-6x^10 + 36x^8 - 48x^6 - 91x^5 + 12x^4 + 546x^3 - 72x^2 - 728x + 96",
+        format!(
+            "{}",
+            Polynomial::<i32>::try_from("x^4 - 6x^2 + 8").unwrap()
+                * Polynomial::<i32>::try_from("-6x^6 - 91x + 12").unwrap()
+        )
+    );
     
     assert_eq!(
-            Polynomial::<i32>::try_from("2x + 18").unwrap(),
-            Polynomial::<i32>::try_from("5x^2 + 2x + 10").unwrap()
-                + Polynomial::<i32>::try_from("8 - 7x^2 + 2x^2").unwrap()
+        "x^2",
+        format!(
+            "{}",
+            Polynomial::<i32>::try_from("x").unwrap()
+                * Polynomial::<i32>::try_from("x").unwrap()
+        )
+    );
+    
+    assert_eq!(
+        "0",
+        format!(
+            "{}",
+            Polynomial::<i32>::try_from("0").unwrap()
+                * Polynomial::<i32>::try_from("x^4 - 7x + 9").unwrap()
+        )
+    );
+    
+    assert_eq!(
+        "x^2 - 1",
+        format!(
+            "{}",
+            Polynomial::<i32>::try_from("x + 1").unwrap()
+                * Polynomial::<i32>::try_from("x - 1").unwrap()
+        )
+    );
+
+    assert_eq!(
+        "x^2 + 5x + 6",
+        format!(
+            "{}",
+            Polynomial::<i32>::try_from("x + 3").unwrap()
+                * Polynomial::<i32>::try_from("x + 2").unwrap()
+        )
+    );
+
+    assert_eq!(
+        "4x^2 + 32x + 64",
+        format!(
+            "{}",
+            Polynomial::<i32>::try_from("2x + 8").unwrap()
+                * Polynomial::<i32>::try_from("2x + 8").unwrap()
+        )
+    );
+
+    assert_eq!(
+        "x^2 + x",
+        format!(
+            "{}",
+            Polynomial::<i32>::try_from("x").unwrap()
+                * Polynomial::<i32>::try_from("x + 1").unwrap()
+        )
+    );
+    
+    assert_eq!(
+        "x^2 + 2x + 1",
+        format!(
+            "{}",
+            Polynomial::<i32>::try_from("x + 1").unwrap()
+                * Polynomial::<i32>::try_from("x + 1").unwrap()
+        )
     );
 }

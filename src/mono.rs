@@ -1,4 +1,4 @@
-use std::{default::Default, fmt::{Display, Error}, i64, iter::Sum, num::IntErrorKind, ops::Add, str::FromStr };
+use std::{default::Default, fmt::{Display, Error}, i64, iter::Sum, num::IntErrorKind, ops::{Add, Mul}, str::FromStr };
 
 use num::{Num, NumCast, Signed};
 
@@ -85,6 +85,18 @@ where
         }
 
         Ok(Monomial::new(self.value + rhs.value, self.exp))
+    }
+}
+
+
+impl<T> Mul for Monomial<T>
+where 
+    T: Num + NumCast + Signed + Copy + Default + Display + FromStr + PartialOrd
+{
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        Monomial::new(self.value * rhs.value, self.exp + rhs.exp)
     }
 }
 

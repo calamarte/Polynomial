@@ -1,6 +1,6 @@
 use std::{
     default::Default,
-    fmt::{Display, Error},
+    fmt::{Debug, Display, Error},
     i64,
     iter::Sum,
     num::IntErrorKind,
@@ -11,19 +11,19 @@ use std::{
 use num::{Num, NumCast, Signed};
 
 pub trait MonomialValue:
-    Num + NumCast + Signed + Copy + Default + Display + FromStr + PartialOrd
+    Num + NumCast + Signed + Copy + Default + Debug + Display + FromStr + PartialOrd + Ord
 {
 }
 
 impl<T> MonomialValue for T where
-    T: Num + NumCast + Signed + Copy + Default + Display + FromStr + PartialOrd
+    T: Num + NumCast + Signed + Copy + Default + Debug + Display + FromStr + PartialOrd + Ord
 {
 }
 
 #[derive(Default, Debug, PartialEq, PartialOrd, Clone, Copy)]
 pub struct Monomial<T> {
-    value: T,
-    exp: i32,
+    pub(crate) value: T,
+    pub(crate) exp: i32,
 }
 
 impl<T: MonomialValue> Monomial<T> {
@@ -56,7 +56,8 @@ impl<T: MonomialValue> TryFrom<&str> for Monomial<T> {
             .trim()
             .to_lowercase()
             .replace(" ", "")
-            .replace("^", "");
+            .replace("^", "")
+            .replace("+", "");
 
         let mut split: Vec<&str> = clean_value.split("x").collect();
 

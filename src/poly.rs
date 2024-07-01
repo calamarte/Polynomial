@@ -1,10 +1,22 @@
+use core::panic;
 use std::{
     collections::HashMap,
     fmt::{Debug, Display},
-    ops::{Add, Div, Mul, Neg},
+    ops::{Add, Div, Index, Mul, Neg},
 };
 
+use num::Zero;
+
 use crate::{mono::Monomial, MonomialValue};
+
+#[derive(PartialEq, Debug)]
+pub enum EquationType {
+    Linear,
+    Quadratic,
+    Biquadratic,
+    Invalid,
+    BigExp,
+}
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Polynomial<T> {
@@ -51,9 +63,25 @@ impl<T: MonomialValue> Polynomial<T> {
         self.mono_vec.push(mono);
     }
 
+    pub fn equation_type(&self) -> EquationType {
+        match self.max_exp().get_exp() {
+            0 => EquationType::Invalid,
+            1 => EquationType::Linear,
+            2 => EquationType::Quadratic,
+            _ => EquationType::BigExp,
+        }
+    }
+
     pub fn push(&mut self, mono: Monomial<T>) {
         self.push_raw(mono);
         self.collapse();
+    }
+
+    pub fn find_by_exp(&self, exp: i32) -> Monomial<T> {
+        self.into_iter()
+            .find(|m| m.get_exp() == exp)
+            .cloned()
+            .unwrap_or_default()
     }
 
     pub fn div_mono(self, rhs: Monomial<T>) -> Self {
@@ -66,6 +94,74 @@ impl<T: MonomialValue> Polynomial<T> {
         let mono_vec = self.into_iter().map(|m| m * rhs).collect();
 
         Polynomial::new(mono_vec)
+    }
+
+    pub fn roots(&self) -> Option<Vec<T>> {
+        match self.equation_type() {
+            EquationType::Linear => Polynomial::<T>::linear_root(self),
+            EquationType::Quadratic => Polynomial::<T>::quadratic_root(self),
+            EquationType::Invalid => None,
+            t @ _ => panic!("{t:?} not implemeted yet!"),
+        }
+    }
+
+    fn linear_root(poly: &Self) -> Option<Vec<T>> {
+        let len = poly.into_iter().len();
+
+        if len > 2 || len < 1 {
+            panic!("{poly} is not a linear equation");
+        }
+
+        if len == 1 {
+            return Some(vec![T::zero()]);
+        }
+
+        println!("{poly:?}");
+        let result = poly[1].neg().get_value() / poly[0].get_value();
+        println!("{result:?}");
+
+        Some(vec![result])
+    }
+
+    fn quadratic_root(poly: &Self) -> Option<Vec<T>> {
+        #[rustfmt::skip]
+        let [a, b, c] = [
+            poly.max_exp(),
+            poly.find_by_exp(1),
+            poly.find_by_exp(0)
+        ].map(|m|m.get_value().to_f64().unwrap());
+
+        if b.is_zero() && c.is_zero() {
+            return Some(vec![T::zero()]);
+        }
+
+        if b.is_zero() {
+            let mut linear = poly.clone();
+            linear.mono_vec[0].exp = 1;
+            let linear_result = Polynomial::<T>::linear_root(&linear)?[0].to_f64()?;
+            let sqrt = T::from(linear_result.sqrt())?;
+
+            if sqrt.is_zero() {
+                return Some(vec![sqrt]);
+            }
+
+            return Some(vec![sqrt.neg(), sqrt]);
+
+        }
+
+        let sqrt = ((b * b) - (4f64 * a * c)).sqrt();
+
+        let result_1 = T::from((b.neg() + sqrt) / (2f64 * a))?;
+        let result_2 = T::from((b.neg() - sqrt) / (2f64 * a))?;
+
+        if result_1 == result_2 {
+            return Some(vec![result_1]);
+        }
+
+        let mut result = vec![result_1, result_2];
+        result.sort();
+
+        Some(result)
     }
 }
 
@@ -124,7 +220,7 @@ impl<T: MonomialValue> Neg for Polynomial<T> {
     type Output = Self;
 
     fn neg(self) -> Self::Output {
-        let mono_vec = self.mono_vec.into_iter().map(Monomial::neg).collect();
+        let mono_vec = self.into_iter().map(Monomial::neg).collect();
 
         Polynomial::new(mono_vec)
     }
@@ -194,6 +290,14 @@ impl<T: MonomialValue> TryFrom<Vec<T>> for Polynomial<T> {
         }
 
         Ok(Polynomial::new(mono_vec))
+    }
+}
+
+impl<T: MonomialValue> Index<usize> for Polynomial<T> {
+    type Output = Monomial<T>;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.mono_vec[index]
     }
 }
 

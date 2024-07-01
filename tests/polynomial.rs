@@ -165,29 +165,47 @@ fn mul_op() {
 
 #[test]
 fn div_op() {
+    #[rustfmt::skip]
     let to_check = HashMap::from([
-        // (("x4 - 6x2 + 8", "x-1"), ("x^3 + x^2 - 5x - 5", "3")), TODO check try_from
+        (("x4 - 6x2 + 8", "x-1"), ("x^3 + x^2 - 5x - 5", "3")),
         (("4x^2 + 32x + 64", "2x + 8"), ("2x + 8", "0")),
-        (("-5x^7 + 42x^3 - 9", "x^2 + 1"), ("-5x^5 + 5x^3 + 37x", "-37x - 9")),
+        (("-5x^7 + 42x^3 - 9", "x^2 + 1"),("-5x^5 + 5x^3 + 37x", "-37x - 9")),
     ])
-        .into_iter()
-        .map(|((str1, str2), (result, rest))| {
+    .into_iter()
+    .map(|((str1, str2), (result, rest))| {
+        (
             (
-                (
-                    Polynomial::<i32>::try_from(str1).unwrap(),
-                    Polynomial::<i32>::try_from(str2).unwrap(),
-                ),
-                (
-                    Polynomial::<i32>::try_from(result).unwrap(),
-                    Polynomial::<i32>::try_from(rest).unwrap(),
-                ),
-            )
-        });
+                Polynomial::<i32>::try_from(str1).unwrap(),
+                Polynomial::<i32>::try_from(str2).unwrap(),
+            ),
+            (
+                Polynomial::<i32>::try_from(result).unwrap(),
+                Polynomial::<i32>::try_from(rest).unwrap(),
+            ),
+        )
+    });
 
     for ((p1, p2), (expect_result, expect_rest)) in to_check {
         let (result, rest) = p1 / p2;
 
         assert_eq!(result, expect_result);
         assert_eq!(rest, expect_rest);
+    }
+}
+
+#[test]
+fn roots_op() {
+    #[rustfmt::skip]
+    let to_check = HashMap::from([
+        ("x - 9", Some(vec![9])),
+        ("-x^2 + 4", Some(vec![-2, 2])),
+        ("2x^2 + 4x - 30", Some(vec![-5, 3])),
+        ("23x^2 + 90x + 100", None),
+        ("x^2 + 81 + 18x", Some(vec![-9]))
+    ]);
+
+    for (p_str, expect) in to_check {
+        let poly = Polynomial::<i32>::try_from(p_str).unwrap();
+        assert_eq!(poly.roots(), expect);
     }
 }

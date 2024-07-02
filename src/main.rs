@@ -9,8 +9,8 @@ fn main() {
         Monomial::try_from("1").unwrap(),
     ];
 
-    let poly: Polynomial<i32> = Polynomial::try_from("-2x^2 + 2x^3 - 10 - 1").unwrap();
-    let poly2: Polynomial<i32> = Polynomial::try_from("-x^2 + 4").unwrap();
+    let poly: Polynomial<i32> = Polynomial::try_from("x^4 - 100").unwrap();
+    let poly2: Polynomial<i32> = Polynomial::try_from("x^4 - 10x^2 + 25").unwrap();
     // let poly_2: Polynomial<i32> = Polynomial::try_from(vec![1,0,0,0, 1, 1]).unwrap();
         
     // (("x4 - 6x2 + 8", "x-1"), ("x^3 + x^2 - 5x - 5", "3")), TODO check try_from
@@ -21,6 +21,7 @@ fn main() {
     // }
     //
 
-    println!("{:?}", poly2.roots());
+    println!("{:?}", poly);
+    println!("{:?}", poly.roots());
 }
 

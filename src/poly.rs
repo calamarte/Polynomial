@@ -1,7 +1,7 @@
 use core::panic;
 use std::{
     collections::HashMap,
-    fmt::{Debug, Display},
+    fmt::Display,
     ops::{Add, Div, Index, Mul, Neg},
 };
 
@@ -68,6 +68,11 @@ impl<T: MonomialValue> Polynomial<T> {
             0 => EquationType::Invalid,
             1 => EquationType::Linear,
             2 => EquationType::Quadratic,
+            4 if self.find_by_exp(3).get_value().is_zero()
+                && self.find_by_exp(1).get_value().is_zero() =>
+            {
+                EquationType::Biquadratic
+            }
             _ => EquationType::BigExp,
         }
     }
@@ -100,6 +105,7 @@ impl<T: MonomialValue> Polynomial<T> {
         match self.equation_type() {
             EquationType::Linear => Polynomial::<T>::linear_root(self),
             EquationType::Quadratic => Polynomial::<T>::quadratic_root(self),
+            EquationType::Biquadratic => Polynomial::<T>::biquadratic_root(self),
             EquationType::Invalid => None,
             t @ _ => panic!("{t:?} not implemeted yet!"),
         }
@@ -116,9 +122,7 @@ impl<T: MonomialValue> Polynomial<T> {
             return Some(vec![T::zero()]);
         }
 
-        println!("{poly:?}");
         let result = poly[1].neg().get_value() / poly[0].get_value();
-        println!("{result:?}");
 
         Some(vec![result])
     }
@@ -146,7 +150,6 @@ impl<T: MonomialValue> Polynomial<T> {
             }
 
             return Some(vec![sqrt.neg(), sqrt]);
-
         }
 
         let sqrt = ((b * b) - (4f64 * a * c)).sqrt();
@@ -159,9 +162,48 @@ impl<T: MonomialValue> Polynomial<T> {
         }
 
         let mut result = vec![result_1, result_2];
-        result.sort();
+        result.sort_by(|a, b| a.partial_cmp(b).unwrap());
 
         Some(result)
+    }
+
+    fn biquadratic_root(poly: &Self) -> Option<Vec<T>> {
+        let [mut a, mut b, c] = [
+            poly.find_by_exp(4),
+            poly.find_by_exp(2),
+            poly.find_by_exp(0),
+        ];
+
+        a.exp = 2;
+        b.exp = 1;
+
+        let quadratic: Polynomial<T> = Polynomial::new(vec![a, b, c]);
+        let quadrtic_result = Polynomial::<T>::quadratic_root(&quadratic)?;
+
+        if quadrtic_result.len() == 1 {
+            let result = T::from(quadrtic_result[0].to_f64()?.sqrt())?;
+
+            return Some(vec![result.neg(), result]);
+        }
+
+        let sqrt_converter = |x: T| T::from(x.to_f64()?.abs().sqrt());
+
+        if let [r1, r2] = *quadrtic_result {
+            let mut result = if r1.abs() == r2.abs() {
+                let r = sqrt_converter(r1)?;
+                vec![r.neg(), r]
+            } else {
+                let r1_1 = sqrt_converter(r1)?;
+                let r2_1 = sqrt_converter(r2)?;
+                vec![r1_1.neg(), r2_1.neg(), r1_1, r2_1]
+            };
+            result.sort_by(|a, b| a.partial_cmp(b).unwrap());
+
+           return Some(result)
+        } 
+
+        None
+
     }
 }
 

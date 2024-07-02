@@ -11,12 +11,12 @@ use std::{
 use num::{Num, NumCast, Signed};
 
 pub trait MonomialValue:
-    Num + NumCast + Signed + Copy + Default + Debug + Display + FromStr + PartialOrd + Ord
+    Num + NumCast + Signed + Copy + Default + Debug + Display + FromStr + PartialOrd
 {
 }
 
 impl<T> MonomialValue for T where
-    T: Num + NumCast + Signed + Copy + Default + Debug + Display + FromStr + PartialOrd + Ord
+    T: Num + NumCast + Signed + Copy + Default + Debug + Display + FromStr + PartialOrd
 {
 }
 

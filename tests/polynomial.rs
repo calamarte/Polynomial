@@ -201,11 +201,26 @@ fn roots_op() {
         ("-x^2 + 4", Some(vec![-2, 2])),
         ("2x^2 + 4x - 30", Some(vec![-5, 3])),
         ("23x^2 + 90x + 100", None),
-        ("x^2 + 81 + 18x", Some(vec![-9]))
+        ("x^2 + 81 + 18x", Some(vec![-9])),
+        ("x^4 - 13x^2 + 36", Some(vec![-3, -2, 2, 3]))
     ]);
 
     for (p_str, expect) in to_check {
         let poly = Polynomial::<i32>::try_from(p_str).unwrap();
+        assert_eq!(poly.roots(), expect);
+    }
+}
+
+#[test]
+fn roots_op_float() {
+    #[rustfmt::skip]
+    let to_check = HashMap::from([
+        ("x^4 - 10x^2 + 25", Some(vec![-2.236068, 2.236068])),
+        ("x^4 - 100", Some(vec![-3.1622777, 3.1622777]))
+    ]);
+
+    for (p_str, expect) in to_check {
+        let poly = Polynomial::<f32>::try_from(p_str).unwrap();
         assert_eq!(poly.roots(), expect);
     }
 }

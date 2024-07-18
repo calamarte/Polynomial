@@ -14,8 +14,8 @@ pub enum EquationType {
     Linear,
     Quadratic,
     Biquadratic,
-    Invalid,
     BigExp,
+    Invalid,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -106,6 +106,7 @@ impl<T: MonomialValue> Polynomial<T> {
             EquationType::Linear => Polynomial::<T>::linear_root(self),
             EquationType::Quadratic => Polynomial::<T>::quadratic_root(self),
             EquationType::Biquadratic => Polynomial::<T>::biquadratic_root(self),
+            EquationType::BigExp => Polynomial::<T>::big_exp_root(self),
             EquationType::Invalid => None,
             t @ _ => panic!("{t:?} not implemeted yet!"),
         }
@@ -199,11 +200,98 @@ impl<T: MonomialValue> Polynomial<T> {
             };
             result.sort_by(|a, b| a.partial_cmp(b).unwrap());
 
-           return Some(result)
-        } 
+            return Some(result);
+        }
 
         None
+    }
 
+    fn big_exp_root(poly: &Self) -> Option<Vec<T>> {
+        let (root, rest) = Polynomial::<T>::find_root(poly);
+
+        let mut roots: Vec<T> = Vec::new();
+
+        if let Some(r) = root {
+            roots.push(T::from(r).unwrap())
+        }
+
+        if let Some(poly) = rest {
+            if let Some(r) = poly.roots() {
+                let generic: Vec<T> = r.into_iter().map(T::from).map(|o| o.unwrap()).collect();
+
+                roots.extend(generic);
+            }
+        }
+
+        if roots.is_empty() {
+            return None;
+        }
+
+        roots.sort_by(|a, b| a.partial_cmp(b).unwrap());
+
+        Some(roots)
+    }
+
+    fn find_divs(value: u64) -> Vec<i64> {
+        let mut divs: Vec<i64> = Vec::new();
+
+        for v in 1..=value {
+            if value % v == 0 {
+                divs.push(v as i64);
+            }
+        }
+
+        let negative: Vec<_> = divs.iter().map(|d| d.neg()).collect();
+        divs.extend(negative);
+
+        divs
+    }
+
+    fn find_root(poly: &Self) -> (Option<i64>, Option<Polynomial<i64>>) {
+        let root_base = match poly.find_by_exp(0).get_value().abs().to_u64() {
+            Some(rb) => rb,
+            None => return (None, None),
+        };
+
+        let divs = Polynomial::<T>::find_divs(root_base);
+
+        let mut target: Polynomial<i64> = Polynomial::default();
+        let mut root: Option<i64> = None;
+
+        'main: for div in divs {
+            let max_exp = poly.max_exp().get_exp();
+            let mut current = 0i64;
+            let mut current_poly: Polynomial<i64> = Polynomial::default();
+            for (i, exp) in (0..=max_exp).rev().enumerate() {
+                let mono_val = match poly.find_by_exp(exp).get_value().to_i64() {
+                    Some(val) => val,
+                    None => return (None, None),
+                };
+
+                let sum = mono_val + current;
+
+                current_poly.push_raw(Monomial::new(sum, exp - 1));
+
+                if i as i32 == max_exp && sum.is_zero() {
+                    root.replace(div);
+                    current_poly.collapse();
+                    target = current_poly;
+                    break 'main;
+                }
+
+                current = sum * div;
+            }
+        }
+
+        if root.is_none() {
+            return (None, None);
+        }
+
+        if target == Polynomial::<i64>::default() {
+            return (root, None);
+        }
+
+        (root, Some(target))
     }
 }
 

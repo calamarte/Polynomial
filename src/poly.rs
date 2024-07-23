@@ -5,7 +5,7 @@ use std::{
     ops::{Add, Div, Index, Mul, Neg},
 };
 
-use num::Zero;
+use num::{Integer, Zero};
 
 use crate::{mono::Monomial, MonomialValue};
 
@@ -15,6 +15,7 @@ pub enum EquationType {
     Quadratic,
     Biquadratic,
     BigExp,
+    BigExp2Terms,
     Invalid,
 }
 
@@ -63,10 +64,15 @@ impl<T: MonomialValue> Polynomial<T> {
         self.mono_vec.push(mono);
     }
 
+    pub fn len(&self) -> usize {
+        self.mono_vec.len()
+    }
+
     pub fn equation_type(&self) -> EquationType {
         match self.max_exp().get_exp() {
             0 => EquationType::Invalid,
             1 => EquationType::Linear,
+            e if e > 1 && self.len() == 2 => EquationType::BigExp2Terms,
             2 => EquationType::Quadratic,
             4 if self.find_by_exp(3).get_value().is_zero()
                 && self.find_by_exp(1).get_value().is_zero() =>
@@ -106,6 +112,7 @@ impl<T: MonomialValue> Polynomial<T> {
             EquationType::Linear => Polynomial::<T>::linear_root(self),
             EquationType::Quadratic => Polynomial::<T>::quadratic_root(self),
             EquationType::Biquadratic => Polynomial::<T>::biquadratic_root(self),
+            EquationType::BigExp2Terms => Polynomial::<T>::big_exp2_root(self),
             EquationType::BigExp => Polynomial::<T>::big_exp_root(self),
             EquationType::Invalid => None,
             t @ _ => panic!("{t:?} not implemeted yet!"),
@@ -206,6 +213,34 @@ impl<T: MonomialValue> Polynomial<T> {
         None
     }
 
+    fn big_exp2_root(poly: &Self) -> Option<Vec<T>> {
+        if poly.len() != 2 {
+            return None;
+        }
+
+        let [a, b] = [poly.max_exp(), poly.find_by_exp(0)];
+        let value = (b.get_value().neg() / a.get_value()).to_f64()?;
+
+        if a.get_exp().is_even() && value.is_sign_negative() {
+            return None;
+        }
+
+        let mut result_val = T::from(value.abs().powf(1f64 / a.get_exp() as f64))?;
+
+        if a.get_exp().is_odd() {
+            if value < 0f64 {
+                result_val = result_val.neg();
+            }
+
+            return Some(vec![result_val]);
+        }
+
+        let mut result = vec![result_val.neg(), result_val];
+        result.sort_by(|a, b| a.partial_cmp(b).unwrap());
+
+        Some(result)
+    }
+
     fn big_exp_root(poly: &Self) -> Option<Vec<T>> {
         let (root, rest) = Polynomial::<T>::find_root(poly);
 
@@ -258,7 +293,7 @@ impl<T: MonomialValue> Polynomial<T> {
         let mut target: Polynomial<i64> = Polynomial::default();
         let mut root: Option<i64> = None;
 
-        'main: for div in divs {
+        'div_loop: for div in divs {
             let max_exp = poly.max_exp().get_exp();
             let mut current = 0i64;
             let mut current_poly: Polynomial<i64> = Polynomial::default();
@@ -276,7 +311,7 @@ impl<T: MonomialValue> Polynomial<T> {
                     root.replace(div);
                     current_poly.collapse();
                     target = current_poly;
-                    break 'main;
+                    break 'div_loop;
                 }
 
                 current = sum * div;

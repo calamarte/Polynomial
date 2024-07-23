@@ -220,10 +220,9 @@ fn roots_op_float() {
     let to_check = HashMap::from([
         ("x^4 - 10x^2 + 25", Some(vec![-2.236068, 2.236068])),
         ("x^4 - 100", Some(vec![-3.1622777, 3.1622777])),
-        // TODO: Float big roots
-        // ("x^3 - 100", Some(vec![-4.6415])),
-        // ("x^8 - 100", Some(vec![-1.778f, 1.778f])),
-        // ("x^13 + 150", Some(vec![-1.470f]))
+        ("x^3 - 100", Some(vec![4.6415887])),
+        ("x^8 - 100", Some(vec![-1.7782794, 1.7782794])),
+        ("x^13 + 150", Some(vec![-1.4702516]))
     ]);
 
     for (p_str, expect) in to_check {

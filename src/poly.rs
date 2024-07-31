@@ -9,28 +9,59 @@ use num::{Integer, Zero};
 
 use crate::{mono::Monomial, MonomialValue};
 
+/// Equations differents types
 #[derive(PartialEq, Debug)]
 pub enum EquationType {
+    /// [Linear equation](https://en.wikipedia.org/wiki/Linear_equation)
+    /// `2x + 1`
     Linear,
+
+    /// [Quadratic equation](https://en.wikipedia.org/wiki/Quadratic_equation)
+    /// `2x^2 + 2x + 1`
     Quadratic,
+
+    /// [Biquadratic equation](https://en.wikipedia.org/wiki/Quartic_equation)
+    /// `2x^4 + 2x^2 + 1`
     Biquadratic,
+
+    /// Equation with exponent grater than **2**
+    /// `2x^3 + 3x^2`
     BigExp,
+
+    /// Equation with exponent grater than **2**, but they only have **two** terms
+    /// `2x^3 + 100`
     BigExp2Terms,
+
+    /// Invalid equation type
     Invalid,
 }
 
+/// [Polynomial](https://en.wikipedia.org/wiki/Polynomial) representation
 #[derive(Debug, PartialEq, Clone)]
 pub struct Polynomial<T> {
     mono_vec: Vec<Monomial<T>>,
 }
 
 impl<T: MonomialValue> Polynomial<T> {
+    /// Constructs a new `Polynomial<T>`
+    /// # Examples
+    /// ```
+    /// # use rust_polynomial::{Polynomial, Monomial};
+    /// let mono_vec: Vec<Monomial<i32>> = vec![
+    ///     Monomial::new(2, 2),
+    ///     Monomial::new(-1, 1),
+    ///     Monomial::new(10, 0),
+    /// ];
+    ///
+    /// let poly: Polynomial<i32> = Polynomial::new(mono_vec);
+    /// ```
     pub fn new(mono_vec: Vec<Monomial<T>>) -> Polynomial<T> {
         let mut poly = Polynomial { mono_vec };
         poly.collapse();
         poly
     }
 
+    /// Sum all Monomials with the same exponent and collapse in a simplificated
     fn collapse(&mut self) {
         let mut group_by_exp: HashMap<i32, Vec<Monomial<T>>> = HashMap::new();
         for mono in self.mono_vec.iter() {
@@ -52,7 +83,15 @@ impl<T: MonomialValue> Polynomial<T> {
         self.mono_vec = mono_vec;
     }
 
-    fn max_exp(&self) -> Monomial<T> {
+    /// Returns the monomial with the max exponent
+    /// # Examples
+    /// ```
+    /// # use rust_polynomial::{Polynomial, Monomial};
+    /// let poly: Polynomial<i32> = Polynomial::try_from("x^2 - 5x - 100").unwrap();
+    ///
+    /// assert_eq!(poly.max_exp().get_exp(), 2);
+    /// ```
+    pub fn max_exp(&self) -> Monomial<T> {
         if self.mono_vec.is_empty() {
             return Monomial::default();
         }
@@ -60,14 +99,31 @@ impl<T: MonomialValue> Polynomial<T> {
         self.mono_vec[0]
     }
 
+    /// Add a monomial but without [`collapse`]
     fn push_raw(&mut self, mono: Monomial<T>) {
         self.mono_vec.push(mono);
     }
 
+    /// Returns the number of Monomials in the Polynomial, also referred to as its 'length'
+    /// # Examples
+    /// ```
+    /// # use rust_polynomial::{Polynomial, Monomial};
+    /// let poly: Polynomial<i32> = Polynomial::default();
+    ///
+    /// assert_eq!(poly.len(), 0);
+    /// ```
     pub fn len(&self) -> usize {
         self.mono_vec.len()
     }
 
+    /// Returns the equation type
+    /// # Examples
+    /// ```
+    /// # use rust_polynomial::{Polynomial, Monomial, EquationType};
+    /// let poly: Polynomial<i32> = Polynomial::try_from("5x - 100").unwrap();
+    ///
+    /// assert_eq!(poly.equation_type(), EquationType::Linear);
+    /// ```
     pub fn equation_type(&self) -> EquationType {
         match self.max_exp().get_exp() {
             0 => EquationType::Invalid,
@@ -83,11 +139,34 @@ impl<T: MonomialValue> Polynomial<T> {
         }
     }
 
+    /// Add a monomial
+    /// # Examples
+    /// ```
+    /// # use rust_polynomial::{Polynomial, Monomial};
+    /// let mut poly: Polynomial<i32> = Polynomial::try_from("5x - 100").unwrap();
+    /// let mono: Monomial<i32> = Monomial::try_from("2x^2").unwrap();
+    ///
+    /// poly.push(mono);
+    ///
+    /// assert_eq!(format!("{poly}"), "2x^2 + 5x - 100");
+    ///
+    /// ```
     pub fn push(&mut self, mono: Monomial<T>) {
         self.push_raw(mono);
         self.collapse();
     }
 
+    /// Find monomial in a polynomial by the exponent if don't find the monomial returns
+    /// [`Monomial::default()`]
+    /// # Examples
+    /// ```
+    /// # use rust_polynomial::{Polynomial, Monomial};
+    /// let poly: Polynomial<i32> = Polynomial::try_from("2x^2 + 5x - 100").unwrap();
+    ///
+    /// assert_eq!(poly.find_by_exp(1), Monomial::new(5, 1));
+    /// assert_eq!(poly.find_by_exp(10), Monomial::default());
+    ///
+    /// ```
     pub fn find_by_exp(&self, exp: i32) -> Monomial<T> {
         self.into_iter()
             .find(|m| m.get_exp() == exp)
@@ -95,18 +174,51 @@ impl<T: MonomialValue> Polynomial<T> {
             .unwrap_or_default()
     }
 
+    /// Returns a new polynomial as result of dividing a monomial
+    /// # Examples
+    /// ```
+    /// # use rust_polynomial::{Polynomial, Monomial};
+    /// let poly: Polynomial<i32> = Polynomial::try_from("10x - 10").unwrap();
+    /// let mono: Monomial<i32> = Monomial::try_from("2").unwrap();
+    ///
+    /// let result = poly.div_mono(mono);
+    ///
+    /// assert_eq!(format!("{result}"), "5x - 5");
+    ///
+    /// ```
     pub fn div_mono(self, rhs: Monomial<T>) -> Self {
         let mono_vec = self.into_iter().map(|m| m / rhs).collect();
 
         Polynomial::new(mono_vec)
     }
 
+    /// Returns a new polynomial as result of multiplying a monomial
+    /// # Examples
+    /// ```
+    /// # use rust_polynomial::{Polynomial, Monomial};
+    /// let poly: Polynomial<i32> = Polynomial::try_from("10x - 10").unwrap();
+    /// let mono: Monomial<i32> = Monomial::try_from("2").unwrap();
+    ///
+    /// let result = poly.mul_mono(mono);
+    ///
+    /// assert_eq!(format!("{result}"), "20x - 20");
+    ///
+    /// ```
     pub fn mul_mono(self, rhs: Monomial<T>) -> Self {
         let mono_vec = self.into_iter().map(|m| m * rhs).collect();
 
         Polynomial::new(mono_vec)
     }
 
+    /// Returns an [`Option`] containing the roots of the equation
+    /// This function uses different strategies based on [`EquationType`]
+    /// # Examples
+    /// ```
+    ///# use rust_polynomial::Polynomial;
+    /// let poly: Polynomial<i32> = Polynomial::try_from("x - 9").unwrap();
+    ///
+    /// assert_eq!(poly.roots(), Some(vec![9]));
+    /// ```
     pub fn roots(&self) -> Option<Vec<T>> {
         match self.equation_type() {
             EquationType::Linear => Polynomial::<T>::linear_root(self),
@@ -115,7 +227,6 @@ impl<T: MonomialValue> Polynomial<T> {
             EquationType::BigExp2Terms => Polynomial::<T>::big_exp2_root(self),
             EquationType::BigExp => Polynomial::<T>::big_exp_root(self),
             EquationType::Invalid => None,
-            t @ _ => panic!("{t:?} not implemeted yet!"),
         }
     }
 

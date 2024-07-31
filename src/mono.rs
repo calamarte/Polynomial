@@ -10,6 +10,7 @@ use std::{
 
 use num::{Num, NumCast, Signed};
 
+/// Trait pattern to allow only **numbers** for generic value
 pub trait MonomialValue:
     Num + NumCast + Signed + Copy + Default + Debug + Display + FromStr + PartialOrd
 {
@@ -20,6 +21,7 @@ impl<T> MonomialValue for T where
 {
 }
 
+/// [Monomial](https://en.wikipedia.org/wiki/Monomial) representation
 #[derive(Default, Debug, PartialEq, PartialOrd, Clone, Copy)]
 pub struct Monomial<T> {
     pub(crate) value: T,
@@ -27,6 +29,8 @@ pub struct Monomial<T> {
 }
 
 impl<T: MonomialValue> Monomial<T> {
+    ///  - `value`: Coefficient
+    ///  - `exp`: Exponent
     pub fn new(value: T, mut exp: i32) -> Monomial<T> {
         if T::is_zero(&value) {
             exp = 0;
@@ -43,11 +47,17 @@ impl<T: MonomialValue> Monomial<T> {
         self.exp
     }
 
+    /// Check if other `Monomial` has same **exponent**
     pub fn is_operable(&self, other: &Self) -> bool {
         self.exp == other.exp
     }
 }
 
+/// # Example expresion
+///
+///```rust
+/// let str = "4x^2";
+///```
 impl<T: MonomialValue> TryFrom<&str> for Monomial<T> {
     type Error = &'static str;
 
@@ -138,6 +148,11 @@ impl<T: MonomialValue> Sum<Self> for Monomial<T> {
     }
 }
 
+/// # Example expresion
+///
+///```rust
+/// let str = "4x^2";
+///```
 impl<T: MonomialValue> Display for Monomial<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let val: i64 = T::to_i64(&self.value).ok_or(Error)?;

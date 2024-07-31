@@ -1,7 +1,11 @@
 [package]
 name = "rust-polynomial"
-version = "0.1.0"
+version = "1.0.0"
+authors = ["calamarte"]
+description = "A lib to operate polynomials"
+repository = "https://github.com/calamarte/Polynomial"
 edition = "2021"
+keywords = ["math"]
 
 [profile.dev]
 opt-level = 0
@@ -9,7 +13,7 @@ debug = true
 
 [profile.release]
 opt-level = 3
-debug = false 
+debug = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
